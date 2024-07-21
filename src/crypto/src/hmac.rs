@@ -1,14 +1,14 @@
-use crate::{hash_func::HashFunc, prf::PRF};
+use crate::{hash_func::HashFunc, prf::Mac};
 
-pub struct HMAC<F: HashFunc>(F);
+pub struct Hmac<F: HashFunc>(F);
 
-impl<F: HashFunc> HMAC<F> {
+impl<F: HashFunc> Hmac<F> {
     pub fn new(f: F) -> Self {
         Self(f)
     }
 }
 
-impl<F: HashFunc> HMAC<F> {
+impl<F: HashFunc> Hmac<F> {
     fn xor_with(key: &mut [u8], value: u8) {
         debug_assert!(F::BLOCK_SIZE <= key.len());
 
@@ -26,7 +26,7 @@ impl<F: HashFunc> HMAC<F> {
     }
 }
 
-impl<F: HashFunc> PRF for HMAC<F> {
+impl<F: HashFunc> Mac for Hmac<F> {
     const OUTPUT_LEN: usize = F::OUTPUT_SIZE;
 
     fn apply(&self, key: &[u8], input: &[u8]) -> Vec<u8> {
@@ -66,7 +66,7 @@ mod tests {
 
     #[test]
     fn sha256() {
-        let hmac = HMAC::new(Sha256);
+        let hmac = Hmac::new(Sha256);
         let result = hmac.apply(b"key", b"The quick brown fox jumps over the lazy dog");
 
         assert_eq!(

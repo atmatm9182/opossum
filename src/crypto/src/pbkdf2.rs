@@ -1,4 +1,4 @@
-use crate::prf::PRF;
+use crate::prf::Mac;
 
 fn xor(dest: &mut [u8], src: &[u8]) {
     debug_assert_eq!(dest.len(), src.len());
@@ -8,10 +8,10 @@ fn xor(dest: &mut [u8], src: &[u8]) {
     }
 }
 
-fn pbkdf2<F: PRF>(prf: &F, password: &[u8], salt: &[u8], c: usize, dk_len: usize) -> Vec<u8> {
-    let nchunks = dk_len / (F::OUTPUT_LEN * 8);
+fn pbkdf2<M: Mac>(prf: &M, password: &[u8], salt: &[u8], c: usize, dk_len: usize) -> Vec<u8> {
+    let nchunks = dk_len / (M::OUTPUT_LEN * 8);
 
-    fn one_block<F: PRF>(prf: &F, password: &[u8], salt: &[u8], c: usize, i: u32) -> Vec<u8> {
+    fn one_block<F: Mac>(prf: &F, password: &[u8], salt: &[u8], c: usize, i: u32) -> Vec<u8> {
         let mut salt = prf.apply(password, &[salt, &i.to_be_bytes()].concat());
         let mut accum = salt.clone();
 
@@ -34,7 +34,7 @@ fn pbkdf2<F: PRF>(prf: &F, password: &[u8], salt: &[u8], c: usize, dk_len: usize
 
 #[cfg(test)]
 mod tests {
-    use hmac::HMAC;
+    use hmac::Hmac;
     use sha256::Sha256;
 
     use super::*;
@@ -45,7 +45,7 @@ mod tests {
         let password = b"p4$$w0rD";
         let salt = b"abcdefgh";
 
-        let hmac = HMAC::new(Sha256);
+        let hmac = Hmac::new(Sha256);
 
         let result = pbkdf2(&hmac, password, salt, 1000, 256);
         assert_eq!(

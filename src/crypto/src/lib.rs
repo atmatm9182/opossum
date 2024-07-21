@@ -7,7 +7,7 @@ mod prf;
 
 use std::fmt::Write;
 
-use prf::PRF;
+use prf::Mac;
 
 fn to_hex_str(bytes: &[u8]) -> String {
     let mut result = String::new();
