@@ -8,10 +8,10 @@ fn xor(dest: &mut [u8], src: &[u8]) {
     }
 }
 
-fn pbkdf2<F: PRF>(prf: F, password: &[u8], salt: &[u8], c: usize, dk_len: usize) -> Vec<u8> {
+fn pbkdf2<F: PRF>(prf: &F, password: &[u8], salt: &[u8], c: usize, dk_len: usize) -> Vec<u8> {
     let nchunks = dk_len / (F::OUTPUT_LEN * 8);
 
-    fn one_block<F: PRF>(prf: F, password: &[u8], salt: &[u8], c: usize, i: u32) -> Vec<u8> {
+    fn one_block<F: PRF>(prf: &F, password: &[u8], salt: &[u8], c: usize, i: u32) -> Vec<u8> {
         let mut salt = prf.apply(password, &[salt, &i.to_be_bytes()].concat());
         let mut accum = salt.clone();
 
@@ -47,7 +47,7 @@ mod tests {
 
         let hmac = HMAC::new(Sha256);
 
-        let result = pbkdf2(hmac, password, salt, 1000, 256);
+        let result = pbkdf2(&hmac, password, salt, 1000, 256);
         assert_eq!(
             to_hex_str(&result).as_str(),
             "ac612a91ab621b800f38df5e87d093da8615fa6bacdad6532a9d31b70e2bc242",

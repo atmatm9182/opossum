@@ -103,7 +103,6 @@ fn sha256(input: &[u8]) -> [u8; 32] {
     result
 }
 
-#[derive(Clone, Copy)]
 pub struct Sha256;
 
 impl HashFunc for Sha256 {
