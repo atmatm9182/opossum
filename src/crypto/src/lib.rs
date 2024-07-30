@@ -4,10 +4,9 @@ mod sha256;
 mod pbkdf2;
 mod hmac;
 mod prf;
+mod scrypt;
 
 use std::fmt::Write;
-
-use prf::Mac;
 
 fn to_hex_str(bytes: &[u8]) -> String {
     let mut result = String::new();
@@ -19,6 +18,10 @@ fn to_hex_str(bytes: &[u8]) -> String {
     result
 }
 
-#[cfg(test)]
-mod tests {
+fn xor(dest: &mut [u8], src: &[u8]) {
+    debug_assert_eq!(dest.len(), src.len());
+
+    for i in 0..dest.len() {
+        dest[i] ^= src[i];
+    }
 }

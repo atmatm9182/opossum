@@ -1,15 +1,7 @@
-use crate::prf::Mac;
+use crate::{prf::Mac, xor};
 
-fn xor(dest: &mut [u8], src: &[u8]) {
-    debug_assert_eq!(dest.len(), src.len());
-
-    for i in 0..dest.len() {
-        dest[i] ^= src[i];
-    }
-}
-
-fn pbkdf2<M: Mac>(prf: &M, password: &[u8], salt: &[u8], c: usize, dk_len: usize) -> Vec<u8> {
-    let nchunks = dk_len / (M::OUTPUT_LEN * 8);
+pub fn pbkdf2<M: Mac>(prf: &M, password: &[u8], salt: &[u8], c: usize, dk_len: usize) -> Vec<u8> {
+    let nchunks = (dk_len as f32 / (M::OUTPUT_LEN as f32 * 8.0)).ceil() as usize;
 
     fn one_block<F: Mac>(prf: &F, password: &[u8], salt: &[u8], c: usize, i: u32) -> Vec<u8> {
         let mut salt = prf.apply(password, &[salt, &i.to_be_bytes()].concat());
@@ -24,12 +16,16 @@ fn pbkdf2<M: Mac>(prf: &M, password: &[u8], salt: &[u8], c: usize, dk_len: usize
     }
 
     let mut res = vec![];
-    for i in 1..=nchunks {
-        let one = one_block(prf, password, salt, c, i as u32);
+    for i in 0..nchunks {
+        let one = one_block(prf, password, salt, c, i as u32 + 1);
         res.extend_from_slice(&one);
     }
 
-    return res;
+    if dk_len < res.len() {
+        res[0..dk_len].to_vec()
+    } else {
+        res
+    }
 }
 
 #[cfg(test)]
@@ -51,6 +47,20 @@ mod tests {
         assert_eq!(
             to_hex_str(&result).as_str(),
             "ac612a91ab621b800f38df5e87d093da8615fa6bacdad6532a9d31b70e2bc242",
+        );
+    }
+
+    #[test]
+    fn hmac_sha256_dk_len_128() {
+        let password = b"pass";
+        let salt = b"salt1234";
+
+        let hmac = Hmac::new(Sha256);
+
+        let result = pbkdf2(&hmac, password, salt, 1, 128);
+        assert_eq!(
+            to_hex_str(&result).as_str(),
+            "b952112bb3ae1794ede803b60800daf2766c73bec626e1f24c55d751ff41079a"
         );
     }
 }
